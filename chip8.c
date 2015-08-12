@@ -30,6 +30,25 @@ unsigned char fontset[80] =
     0xf0, 0x80, 0xf0, 0x80, 0x80
 };
 
+static SDL_Scancode keyMappings[16] = {
+    SDL_SCANCODE_X,
+    SDL_SCANCODE_1,
+    SDL_SCANCODE_2,
+    SDL_SCANCODE_3,
+    SDL_SCANCODE_Q,
+    SDL_SCANCODE_W,
+    SDL_SCANCODE_E,
+    SDL_SCANCODE_A,
+    SDL_SCANCODE_S,
+    SDL_SCANCODE_D,
+    SDL_SCANCODE_Z,
+    SDL_SCANCODE_C,
+    SDL_SCANCODE_4,
+    SDL_SCANCODE_R,
+    SDL_SCANCODE_F,
+    SDL_SCANCODE_V,
+};
+
 typedef struct {
     unsigned short opcode;
     unsigned char memory[4096];
@@ -151,25 +170,12 @@ int main(int argc, char **argv)
             }
         }
 
-        /* const Uint8 *state = SDL_GetKeyboardState(NULL); */
+        const Uint8 *state = SDL_GetKeyboardState(NULL);
 
-        /* cpu.keys[0x0] = rand() % 2; */
-        /* cpu.keys[0x1] = rand() % 2; */
-        /* cpu.keys[0x2] = rand() % 2; */
-        /* cpu.keys[0x3] = rand() % 2; */
-        /* cpu.keys[0x4] = rand() % 2; */
-        /* cpu.keys[0x5] = rand() % 2; */
-        /* cpu.keys[0x6] = rand() % 2; */
-        /* cpu.keys[0x7] = rand() % 2; */
-        /* cpu.keys[0x8] = rand() % 2; */
-        /* cpu.keys[0x9] = rand() % 2; */
-        /* cpu.keys[0xA] = rand() % 2; */
-        /* cpu.keys[0xB] = rand() % 2; */
-        /* cpu.keys[0xC] = rand() % 2; */
-        /* cpu.keys[0xD] = rand() % 2; */
-        /* cpu.keys[0xE] = rand() % 2; */
-        /* cpu.keys[0xF] = rand() % 2; */
-
+        for(int i = 0; i < 16; i++)
+        {
+            cpu.keys[i] = state[keyMappings[i]];
+        }
 
         int opfound = 0;
         cpu.opcode = cpu.memory[cpu.programCounter] << 8 | cpu.memory[cpu.programCounter + 1];
