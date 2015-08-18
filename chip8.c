@@ -179,10 +179,6 @@ int main(int argc, char **argv)
 
         int opfound = 0;
         cpu.opcode = cpu.memory[cpu.programCounter] << 8 | cpu.memory[cpu.programCounter + 1];
-        unsigned short int height = 0;
-        unsigned short int x = 0;
-        unsigned short int y = 0;
-
         switch(cpu.opcode & 0xF000)
         {
             case 0x1000:
@@ -254,9 +250,10 @@ int main(int argc, char **argv)
                 break;
             case 0xD000:
                 cpu.V[0xF] = 0;
-                height = cpu.opcode & 0x000F;
-                x = cpu.V[(cpu.opcode & 0x0F00) >> 8];
-                y = cpu.V[(cpu.opcode & 0x00F0) >> 4];
+
+                uint8_t height = cpu.opcode & 0x000F;
+                uint8_t x = cpu.V[(cpu.opcode & 0x0F00) >> 8];
+                uint8_t y = cpu.V[(cpu.opcode & 0x00F0) >> 4];
 
                 for(int i = 0; i < height; i++)
                 {
@@ -270,12 +267,15 @@ int main(int argc, char **argv)
                         if(cpu.graphics[x + j][y + i] == 1)
                         {
                             cpu.V[0xF] = 1;
+                            cpu.graphics[x + j][y + i] = 0;
                         }
-
-                        cpu.graphics[x + j][y + i] ^= 1;
+                        else
+                        {
+                            cpu.graphics[x + j][y + i] = 1;
+                        }
                     }
-                    
                 }
+
                 printf("cpu opcode found: %x\n", cpu.opcode);
                 cpu.programCounter += 2;
                 cpu.draw = 1;
@@ -288,11 +288,12 @@ int main(int argc, char **argv)
             case 0xF00A: 
                 printf("cpu opcode found: %x\n", cpu.opcode);
 
+                cpu.programCounter -= 2;
                 for(int i = 0; i < 16; i++)
                 {
                     if(cpu.keys[i] == 1)
                     {
-                        cpu.V[(cpu.opcode & 0x0F00) >> 8] = cpu.keys[i];
+                        cpu.V[(cpu.opcode & 0x0F00) >> 8] = i;
                         cpu.programCounter += 2;
                     }
                 }
@@ -319,7 +320,7 @@ int main(int argc, char **argv)
                 break;
             case 0xF029:
                 printf("cpu opcode found: %x\n", cpu.opcode);
-                cpu.indexRegister = cpu.V[(cpu.opcode & 0x0F00 >> 8)] * 5;
+                cpu.indexRegister = cpu.V[(cpu.opcode & 0x0F00) >> 8] * 5;
                 cpu.programCounter += 2;
                 opfound = 1;
                 break;
