@@ -52,7 +52,7 @@ static SDL_Scancode keyMappings[16] = {
 typedef struct {
     unsigned short opcode;
     unsigned char memory[4096];
-    unsigned char V[16];
+    uint8_t V[16];
     unsigned short indexRegister;
     unsigned short programCounter;
     unsigned char graphics[64][32];
@@ -179,6 +179,7 @@ int main(int argc, char **argv)
 
         int opfound = 0;
         cpu.opcode = cpu.memory[cpu.programCounter] << 8 | cpu.memory[cpu.programCounter + 1];
+
         switch(cpu.opcode & 0xF000)
         {
             case 0x1000:
@@ -188,7 +189,7 @@ int main(int argc, char **argv)
                 break;
             case 0x2000:
                 printf("cpu opcode found: %x\n", cpu.opcode);
-                cpu.stack[cpu.stackPointer] = cpu.programCounter + 2;
+                cpu.stack[cpu.stackPointer] = cpu.programCounter;
                 cpu.stackPointer++;
                 cpu.programCounter = cpu.opcode & 0x0FFF;
                 opfound = 1;
@@ -244,7 +245,7 @@ int main(int argc, char **argv)
                 opfound = 1;
                 break;
             case 0xC000: 
-                cpu.V[(cpu.opcode & 0x0F00) >> 8] = (rand() % 256) & 0x00FF;
+                cpu.V[(cpu.opcode & 0x0F00) >> 8] = (rand() % 256) & (cpu.opcode & 0x00FF);
                 cpu.programCounter += 2;
                 opfound = 1;
                 break;
@@ -254,25 +255,25 @@ int main(int argc, char **argv)
                 uint8_t height = cpu.opcode & 0x000F;
                 uint8_t x = cpu.V[(cpu.opcode & 0x0F00) >> 8];
                 uint8_t y = cpu.V[(cpu.opcode & 0x00F0) >> 4];
+                uint8_t sprite = 0;
 
                 for(int i = 0; i < height; i++)
                 {
+                    sprite = cpu.memory[cpu.indexRegister + i];
+
                     for(int j = 0; j < 8; j++)
                     {
-                        if((cpu.memory[cpu.indexRegister + i] & (0x80 >> j)) == 0)
+                        if((sprite & (0x80 >> j)) == 0)
                         {
                             continue;
                         }
 
-                        if(cpu.graphics[x + j][y + i] == 1)
+                        if(cpu.graphics[x + j][y + i] == 0x1)
                         {
                             cpu.V[0xF] = 1;
-                            cpu.graphics[x + j][y + i] = 0;
                         }
-                        else
-                        {
-                            cpu.graphics[x + j][y + i] = 1;
-                        }
+
+                        cpu.graphics[x + j][y + i] ^= 1;
                     }
                 }
 
@@ -415,6 +416,13 @@ int main(int argc, char **argv)
             case 0x8000:
                 cpu.V[(cpu.opcode & 0x0F00) >> 8] = cpu.V[(cpu.opcode & 0x00F0) >> 4];
                 printf("cpu opcode found: %x\n", cpu.opcode);
+                cpu.programCounter += 2;
+                opfound = 1;
+                break;
+            case 0x8006:
+                cpu.V[(cpu.opcode & 0x0F00) >> 8] >>= 1;
+                cpu.V[0xF] = cpu.V[(cpu.opcode & 0x0F00) >> 8] & 1;
+
                 cpu.programCounter += 2;
                 opfound = 1;
                 break;

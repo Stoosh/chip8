@@ -1,0 +1,4 @@
+ROMS
+chip8
+*.dSYM
+.DS_Store
