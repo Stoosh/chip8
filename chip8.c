@@ -30,24 +30,6 @@ unsigned char fontset[80] =
     0xf0, 0x80, 0xf0, 0x80, 0x80
 };
 
-static SDL_Scancode keyMappings[16] = {
-    SDL_SCANCODE_X,
-    SDL_SCANCODE_1,
-    SDL_SCANCODE_2,
-    SDL_SCANCODE_3,
-    SDL_SCANCODE_Q,
-    SDL_SCANCODE_W,
-    SDL_SCANCODE_E,
-    SDL_SCANCODE_A,
-    SDL_SCANCODE_S,
-    SDL_SCANCODE_D,
-    SDL_SCANCODE_Z,
-    SDL_SCANCODE_C,
-    SDL_SCANCODE_4,
-    SDL_SCANCODE_R,
-    SDL_SCANCODE_F,
-    SDL_SCANCODE_V,
-};
 
 typedef struct {
     unsigned short opcode;
@@ -56,8 +38,8 @@ typedef struct {
     unsigned short indexRegister;
     unsigned short programCounter;
     unsigned char graphics[64][32];
-    unsigned char delayTimer;
-    unsigned char soundTimer;
+    uint8_t delayTimer;
+    uint8_t soundTimer;
     unsigned short stack[16];
     unsigned short stackPointer;
     uint8_t keys[16];
@@ -98,6 +80,8 @@ int main(int argc, char **argv)
     cpu.opcode = 0;
     cpu.indexRegister = 0;
     cpu.stackPointer = 0;
+    cpu.delayTimer = 0;
+    cpu.soundTimer = 0;
 
     printf("Opening ROM\n"); 
     cpu.fileDescriptor = open(argv[1], O_RDONLY);
@@ -167,14 +151,69 @@ int main(int argc, char **argv)
                 case SDL_QUIT:
                     return 1;
                     break;
+                case SDL_KEYUP:
+                    for(int i = 0; i < 16; i++)
+                    {
+                        cpu.keys[i] = 0;
+                    }
+
+                    break;
+                case SDL_KEYDOWN:
+                    switch(event.key.keysym.sym)
+                    {
+                        case SDLK_ESCAPE:
+                            return 1;
+                            break;
+                        case SDLK_x:
+                            cpu.keys[0] = 1;
+                            break;
+                        case SDLK_1:
+                            cpu.keys[1] = 1;
+                            break;
+                        case SDLK_2:
+                            cpu.keys[2] = 1;
+                            break;
+                        case SDLK_3:
+                            cpu.keys[3] = 1;
+                            break;
+                        case SDLK_q:
+                            cpu.keys[4] = 1;
+                            break;
+                        case SDLK_w:
+                            cpu.keys[5] = 1;
+                            break;
+                        case SDLK_e:
+                            cpu.keys[6] = 1;
+                            break;
+                        case SDLK_a:
+                            cpu.keys[7] = 1;
+                            break;
+                        case SDLK_s:
+                            cpu.keys[8] = 1;
+                            break;
+                        case SDLK_d:
+                            cpu.keys[9] = 1;
+                            break;
+                        case SDLK_z:
+                            cpu.keys[10] = 1;
+                            break;
+                        case SDLK_c:
+                            cpu.keys[11] = 1;
+                            break;
+                        case SDLK_4:
+                            cpu.keys[12] = 1;
+                            break;
+                        case SDLK_r:
+                            cpu.keys[13] = 1;
+                            break;
+                        case SDLK_f:
+                            cpu.keys[14] = 1;
+                            break;
+                        case SDLK_v:
+                            cpu.keys[15] = 1;
+                            break;
+                    }
             }
-        }
-
-        const Uint8 *state = SDL_GetKeyboardState(NULL);
-
-        for(int i = 0; i < 16; i++)
-        {
-            cpu.keys[i] = state[keyMappings[i]];
         }
 
         int opfound = 0;
@@ -307,6 +346,12 @@ int main(int argc, char **argv)
                 cpu.delayTimer = cpu.V[(cpu.opcode & 0x0F00) >> 8];
                 opfound = 1;
                 break;
+            case 0xF018: 
+                printf("cpu opcode found: %x\n", cpu.opcode);
+                cpu.programCounter += 2;
+                cpu.soundTimer = cpu.V[(cpu.opcode & 0x0F00) >> 8];
+                opfound = 1;
+                break;
             case 0xF01E:
                 printf("cpu opcode found: %x\n", cpu.opcode);
                 cpu.indexRegister += cpu.V[(cpu.opcode & 0x0F00) >> 8];
@@ -419,6 +464,42 @@ int main(int argc, char **argv)
                 cpu.programCounter += 2;
                 opfound = 1;
                 break;
+            case 0x8002:
+                cpu.V[(cpu.opcode & 0x0F00) >> 8] &= cpu.V[(cpu.opcode & 0x00F0) >> 4];
+                printf("cpu opcode found: %x\n", cpu.opcode);
+                cpu.programCounter += 2;
+                opfound = 1;
+                break;
+            case 0x8004:
+                cpu.V[(cpu.opcode & 0x0F00) >> 8] += cpu.V[(cpu.opcode & 0x00F0) >> 4];
+
+                if(cpu.V[(cpu.opcode & 0x0F00) >> 8] > 0xFF)
+                {
+                    cpu.V[0xF] = 1;
+                }
+                else
+                {
+                    cpu.V[0xF] = 0;
+                }
+                printf("cpu opcode found: %x\n", cpu.opcode);
+                cpu.programCounter += 2;
+                opfound = 1;
+                break;
+            case 0x8005:
+                if(cpu.V[(cpu.opcode & 0x0F00) >> 8] > cpu.V[(cpu.opcode & 0x00F0) >> 4])
+                {
+                    cpu.V[0xF] = 1;
+                }
+                else
+                {
+                    cpu.V[0xF] = 0;
+                }
+
+                cpu.V[(cpu.opcode & 0x0F00) >> 8] -= cpu.V[(cpu.opcode & 0x00F0) >> 4];
+                printf("cpu opcode found: %x\n", cpu.opcode);
+                cpu.programCounter += 2;
+                opfound = 1;
+                break;
             case 0x8006:
                 cpu.V[(cpu.opcode & 0x0F00) >> 8] >>= 1;
                 cpu.V[0xF] = cpu.V[(cpu.opcode & 0x0F00) >> 8] & 1;
@@ -446,12 +527,12 @@ int main(int argc, char **argv)
             break;
         }
 
-        if(cpu.soundTimer < 1)
+        if(cpu.soundTimer > 0)
         {
             cpu.soundTimer--;
         }
 
-        if(cpu.delayTimer < 1)
+        if(cpu.delayTimer > 0)
         {
             cpu.delayTimer--;
         }
