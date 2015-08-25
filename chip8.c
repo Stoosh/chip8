@@ -32,16 +32,16 @@ unsigned char fontset[80] =
 
 
 typedef struct {
-    unsigned short opcode;
+    uint16_t opcode;
     unsigned char memory[4096];
     uint8_t V[16];
-    unsigned short indexRegister;
-    unsigned short programCounter;
+    uint16_t indexRegister;
+    uint16_t programCounter;
     unsigned char graphics[64][32];
     uint8_t delayTimer;
     uint8_t soundTimer;
-    unsigned short stack[16];
-    unsigned short stackPointer;
+    uint16_t stack[16];
+    uint16_t stackPointer;
     uint8_t keys[16];
     uint8_t draw;
     int fileDescriptor;
